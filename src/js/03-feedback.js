@@ -1,34 +1,46 @@
-import throttle from 'lodash.throttle';
-
-const LOCALSTORAGE_KEY = 'selectedFilters';
+import _throttle from 'lodash.throttle';
 const formEl = document.querySelector('.feedback-form');
+const LOCAL_STORAGE_KEY = 'feedback-form-state';
 
-initForm();
+let data = {};
+
+loadForm();
+
+formEl.addEventListener('input', _throttle(onSaveFormInput, 500));
 
 formEl.addEventListener('submit', onFormSubmit);
-formEl.addEventListener('input', throttle(onFormInput, 500));
 
-function onFormSubmit(evt) {
-  evt.preventDefault();
-  const formData = new FormData(formEl);
-  formData.forEach((value, name) => console.log(value, name));
-  evt.currentTarget.reset();
-  localStorage.removeItem(LOCALSTORAGE_KEY);
+function onSaveFormInput(event) {
+  data = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || {};
+
+  data[event.target.name] = event.target.value;
+
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
 }
 
-function onFormInput(evt) {
-  let persistedFilters = localStorage.getItem(LOCALSTORAGE_KEY);
-  persistedFilters = persistedFilters ? JSON.parse(persistedFilters) : {};
-  persistedFilters[evt.target.name] = evt.target.value;
-  localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(persistedFilters));
+function onFormSubmit(event) {
+  event.preventDefault();
+  if (!event.target.email.value || !event.target.message.value) {
+    alert('Enter all data');
+    return;
+  }
+
+  event.target.reset();
+  console.log(data);
+  localStorage.removeItem(LOCAL_STORAGE_KEY);
 }
 
-function initForm() {
-  let persistedFilters = localStorage.getItem(LOCALSTORAGE_KEY);
-  if (persistedFilters) {
-    persistedFilters = JSON.parse(persistedFilters);
-    Object.entries(persistedFilters).forEach(([name, value]) => {
-      formEl.elements[name].value = value;
-    });
+function loadForm() {
+  try {
+    let formLoad = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY));
+    if (!formLoad) {
+      return;
+    }
+
+    data = formLoad;
+    formEl.email.value = data.email || '';
+    formEl.message.value = data.message || '';
+  } catch (error) {
+    console.error('Error.message ', error.message);
   }
 }
